@@ -15,10 +15,28 @@ LLAMA_CONFIG = {
 
 PIPELINE_ENDPOINT = "https://api.cloud.llamaindex.ai/api/v1/pipelines/1bc5e382-d0b6-4dcf-98c5-bf4ce8f67301/retrieve"
 
-# Initialize LlamaCloud Index
-index = LlamaCloudIndex(**LLAMA_CONFIG)
-retriever = index.as_retriever()
-query_engine = index.as_query_engine()
+# Lazy initialization helpers
+_index = None
+_retriever = None
+_query_engine = None
+
+def get_index():
+    global _index
+    if _index is None:
+        _index = LlamaCloudIndex(**LLAMA_CONFIG)
+    return _index
+
+def get_retriever():
+    global _retriever
+    if _retriever is None:
+        _retriever = get_index().as_retriever()
+    return _retriever
+
+def get_query_engine():
+    global _query_engine
+    if _query_engine is None:
+        _query_engine = get_index().as_query_engine()
+    return _query_engine
 
 
 @tool
@@ -39,7 +57,7 @@ async def retrieve_matching_rules(query: str, top_k: int = 5) -> Dict[str, Any]:
     Returns:
         dict com nodes contendo text, score e metadata
     """
-    nodes = retriever.retrieve(query)
+    nodes = get_retriever().retrieve(query)
     return {
         "query": query,
         "nodes": [
@@ -67,7 +85,7 @@ async def query_indufix_knowledge(query: str) -> str:
     Returns:
         str com resposta sintetizada
     """
-    response = query_engine.query(query)
+    response = get_query_engine().query(query)
     return str(response)
 
 
@@ -84,7 +102,7 @@ async def get_default_values(product_type: str, missing_attributes: List[str]) -
         dict com valores default e penalidades de confiança
     """
     query = f"valores default para {product_type}: {', '.join(missing_attributes)}"
-    nodes = retriever.retrieve(query)
+    nodes = get_retriever().retrieve(query)
     
     defaults = []
     for i, attr in enumerate(missing_attributes):
@@ -116,7 +134,7 @@ async def get_standard_equivalences(standard: str) -> Dict[str, Any]:
         dict com normas equivalentes e especificações
     """
     query = f"equivalência norma padrão {standard} fastener"
-    nodes = retriever.retrieve(query)
+    nodes = get_retriever().retrieve(query)
     
     equivalences = []
     for node in nodes:
@@ -150,7 +168,7 @@ async def get_confidence_penalty(
         dict com penalidade sugerida e justificativa
     """
     query = f"penalidade confiança {attribute} {inferred_value} inferido por {inference_method}"
-    nodes = retriever.retrieve(query)
+    nodes = get_retriever().retrieve(query)
     
     if nodes and len(nodes) > 0:
         best_match = nodes[0]
