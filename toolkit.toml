@@ -1,0 +1,22 @@
+[toolkit]
+name = "indufix-llamaindex-toolkit"
+description = "Hybrid toolkit: LlamaCloud indexes + custom pipeline tools"
+tools = "./indufix_toolkit/__init__.py:TOOLS"
+
+# MCP Server: LlamaCloud para indexes existentes
+[[mcp_servers]]
+name = "llamacloud"
+transport = "stdio"
+command = "npx"
+args = [
+    "-y",
+    "@llamaindex/mcp-server-llamacloud",
+    "--index", "Forjador Indufix",
+    "--description", "Base de conhecimento Indufix para regras de matching de SKU, valores default, equivalências e penalidades de confiança",
+    "--topK", "5"
+]
+
+[mcp_servers.env]
+LLAMA_CLOUD_API_KEY = "${LLAMA_CLOUD_API_KEY}"
+LLAMA_CLOUD_PROJECT_NAME = "Default"
+LLAMA_CLOUD_ORGANIZATION_ID = "e6e330e4-a8c4-4472-841b-096d0f307394"
