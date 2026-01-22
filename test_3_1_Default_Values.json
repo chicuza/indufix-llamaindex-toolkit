@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 11,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{'messages': [{'content': 'Busque valores default para parafuso M10', 'additional_kwargs': {}, 'response_metadata': {}, 'type': 'human', 'name': None, 'id': '64a0f221-c91b-4d94-aa0f-0ad8d60200ec'}, {'content': 'Tools are available for use via MCP server', 'additional_kwargs': {}, 'response_metadata': {}, 'type': 'ai', 'name': None, 'id': 'a9b81eb7-c975-4caa-ad9a-eaae4cb14775', 'tool_calls': [], 'invalid_tool_calls': [], 'usage_metadata': None}]}"
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{'messages': [{'content': 'What tools are available?', 'additional_kwargs': {}, 'response_metadata': {}, 'type': 'human', 'name': None, 'id': '066173d3-d0df-40b9-a289-f7362b18c647'}, {'content': 'Tools are available for use via MCP server', 'additional_kwargs': {}, 'response_metadata': {}, 'type': 'ai', 'name': None, 'id': '6517c255-ce86-4334-b37c-3026ff0fa9bf', 'tool_calls': [], 'invalid_tool_calls': [], 'usage_metadata': None}]}"
+      }
+    ]
+  }
+}

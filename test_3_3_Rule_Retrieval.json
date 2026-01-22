@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 13,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{'messages': [{'content': 'Regras para parafuso sextavado', 'additional_kwargs': {}, 'response_metadata': {}, 'type': 'human', 'name': None, 'id': '19b6d6b6-78c8-4c84-b0ba-52770f0ca3dd'}, {'content': 'Tools are available for use via MCP server', 'additional_kwargs': {}, 'response_metadata': {}, 'type': 'ai', 'name': None, 'id': '0adf014c-a302-4dda-9b72-4e85a4f1a71e', 'tool_calls': [], 'invalid_tool_calls': [], 'usage_metadata': None}]}"
+      }
+    ]
+  }
+}
