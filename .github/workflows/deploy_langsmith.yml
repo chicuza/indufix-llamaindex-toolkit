@@ -123,10 +123,19 @@ jobs:
       - name: Deploy to LangSmith Cloud
         id: deploy
         env:
+          # LangSmith deployment credentials
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           WORKSPACE_ID: ${{ secrets.WORKSPACE_ID }}
           INTEGRATION_ID: ${{ secrets.INTEGRATION_ID }}
+          # Runtime secrets (passed to deployed app)
           LLAMA_CLOUD_API_KEY: ${{ secrets.LLAMA_CLOUD_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # LangSmith tracing (optional)
+          LANGCHAIN_TRACING_V2: ${{ secrets.LANGCHAIN_TRACING_V2 || 'true' }}
+          LANGCHAIN_PROJECT: ${{ secrets.LANGCHAIN_PROJECT || 'indufix-llamaindex-toolkit' }}
+          LANGCHAIN_ENDPOINT: ${{ secrets.LANGCHAIN_ENDPOINT || 'https://api.smith.langchain.com' }}
+          LANGCHAIN_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
         run: |
           echo "============================================================"
           echo "Deploying to LangSmith Cloud"
