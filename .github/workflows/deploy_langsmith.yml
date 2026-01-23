@@ -120,6 +120,49 @@ jobs:
             echo "CONFIG_FILE=deployment/deploy_config.yaml" >> $GITHUB_OUTPUT
           fi
 
+      - name: Validate required secrets
+        run: |
+          echo "Validating required secrets..."
+
+          # Check critical secrets
+          if [ -z "${{ secrets.LANGSMITH_API_KEY }}" ]; then
+            echo "ERROR: LANGSMITH_API_KEY secret is not set"
+            echo "Please add it in: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.WORKSPACE_ID }}" ]; then
+            echo "ERROR: WORKSPACE_ID secret is not set"
+            echo "Please add it in: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.INTEGRATION_ID }}" ]; then
+            echo "ERROR: INTEGRATION_ID secret is not set"
+            echo "Please add it in: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.LLAMA_CLOUD_API_KEY }}" ]; then
+            echo "ERROR: LLAMA_CLOUD_API_KEY secret is not set"
+            echo "Please add it in: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+
+          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "ERROR: ANTHROPIC_API_KEY secret is not set"
+            echo "Please add it in: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
+          fi
+
+          echo "All required secrets are present!"
+          echo "- LANGSMITH_API_KEY: Set"
+          echo "- WORKSPACE_ID: Set"
+          echo "- INTEGRATION_ID: Set"
+          echo "- LLAMA_CLOUD_API_KEY: Set"
+          echo "- ANTHROPIC_API_KEY: Set"
+          echo "- OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY && 'Set' || 'Not set (optional)' }}"
+
       - name: Deploy to LangSmith Cloud
         id: deploy
         env:
@@ -143,6 +186,7 @@ jobs:
           echo "Config: ${{ steps.env.outputs.CONFIG_FILE }}"
           echo "Branch: ${{ github.ref_name }}"
           echo "Commit: ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
           echo "============================================================"
 
           # Run deployment using official pattern (revision polling)
@@ -155,7 +199,16 @@ jobs:
           # Note: deploy_ci.py will exit with code 1 if deployment fails
           # This properly fails the GitHub Actions workflow
 
-          echo "Deployment completed successfully!"
+          echo ""
+          echo "============================================================"
+          echo "DEPLOYMENT COMPLETED SUCCESSFULLY!"
+          echo "============================================================"
+          echo ""
+          echo "Next steps:"
+          echo "1. Verify deployment in LangSmith UI: https://smith.langchain.com"
+          echo "2. Check deployment health and status"
+          echo "3. Test application endpoints"
+          echo ""
 
       - name: Post-deployment validation
         if: success()
