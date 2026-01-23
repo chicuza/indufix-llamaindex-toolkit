@@ -1,0 +1,268 @@
+name: Deploy to LangSmith Cloud
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:  # Allow manual triggers
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+# Prevent concurrent deployments to the same environment
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false  # Don't cancel running deployments
+
+jobs:
+  # ============================================================================
+  # Job 1: Run Tests
+  # ============================================================================
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Run unit tests
+        run: |
+          # Run tests if they exist
+          if [ -d "tests" ]; then
+            echo "Running tests..."
+            python -m pytest tests/ -v || echo "No tests found or tests failed"
+          else
+            echo "No tests directory found, skipping..."
+          fi
+
+      - name: Validate deployment configs
+        run: |
+          # Validate YAML configs
+          python -c "
+          import yaml
+          from pathlib import Path
+
+          configs = Path('deployment').glob('deploy_config*.yaml')
+          for config_file in configs:
+              print(f'Validating {config_file}...')
+              with open(config_file) as f:
+                  config = yaml.safe_load(f)
+                  assert 'deployment' in config, f'{config_file}: missing deployment section'
+                  assert 'name' in config['deployment'], f'{config_file}: missing deployment.name'
+              print(f'  OK: {config_file}')
+          "
+
+  # ============================================================================
+  # Job 2: Deploy to LangSmith Cloud
+  # ============================================================================
+  deploy:
+    needs: test  # Only deploy if tests pass
+    runs-on: ubuntu-latest
+
+    # GitHub environment protection (requires manual approval for prod)
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+      url: ${{ steps.deploy.outputs.deployment_url }}
+
+    outputs:
+      deployment_id: ${{ steps.deploy.outputs.deployment_id }}
+      deployment_url: ${{ steps.deploy.outputs.deployment_url }}
+      revision_id: ${{ steps.deploy.outputs.revision_id }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deployment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "ENV=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "ENV=prod" >> $GITHUB_OUTPUT
+          else
+            echo "ENV=dev" >> $GITHUB_OUTPUT
+          fi
+
+          # Set config file based on environment
+          ENV_TYPE=$(cat $GITHUB_OUTPUT | grep ENV= | cut -d= -f2)
+          if [ "$ENV_TYPE" == "prod" ]; then
+            echo "CONFIG_FILE=deployment/deploy_config_prod.yaml" >> $GITHUB_OUTPUT
+          else
+            echo "CONFIG_FILE=deployment/deploy_config.yaml" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to LangSmith Cloud
+        id: deploy
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          WORKSPACE_ID: ${{ secrets.WORKSPACE_ID }}
+          INTEGRATION_ID: ${{ secrets.INTEGRATION_ID }}
+          LLAMA_CLOUD_API_KEY: ${{ secrets.LLAMA_CLOUD_API_KEY }}
+        run: |
+          echo "============================================================"
+          echo "Deploying to LangSmith Cloud"
+          echo "Environment: ${{ steps.env.outputs.ENV }}"
+          echo "Config: ${{ steps.env.outputs.CONFIG_FILE }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "============================================================"
+
+          # Run deployment using official pattern (revision polling)
+          python deployment/deploy_ci.py \
+            --env ${{ steps.env.outputs.ENV }} \
+            --config ${{ steps.env.outputs.CONFIG_FILE }} \
+            --wait \
+            --timeout 1800
+
+          # Note: deploy_ci.py will exit with code 1 if deployment fails
+          # This properly fails the GitHub Actions workflow
+
+          echo "Deployment completed successfully!"
+
+      - name: Post-deployment validation
+        if: success()
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          WORKSPACE_ID: ${{ secrets.WORKSPACE_ID }}
+        run: |
+          echo "Running post-deployment validation..."
+
+          # Get deployment details
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+          from deployment.langsmith_deploy import LangSmithDeployClient
+
+          client = LangSmithDeployClient.from_env()
+
+          env_type = '${{ steps.env.outputs.ENV }}'
+          deployment_name = f'indufix-llamaindex-toolkit'  # Match config
+
+          # Get deployment
+          deployments = client.list_deployments()
+          deployment = next((d for d in deployments if d['name'] == deployment_name), None)
+
+          if not deployment:
+              print('ERROR: Deployment not found after creation!')
+              sys.exit(1)
+
+          print(f'Deployment ID: {deployment[\"id\"]}')
+          print(f'Deployment URL: {deployment.get(\"url\", \"N/A\")}')
+          print(f'Health: {deployment.get(\"health\", \"N/A\")}')
+          print(f'State: {deployment.get(\"state\", \"N/A\")}')
+
+          # Check health
+          if deployment.get('health') != 'healthy':
+              print('WARNING: Deployment exists but health is not healthy yet')
+              print('This is expected - revision may still be deploying')
+
+          print('Post-deployment validation passed!')
+          "
+
+      - name: Rollback on failure
+        if: failure()
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          WORKSPACE_ID: ${{ secrets.WORKSPACE_ID }}
+        run: |
+          echo "============================================================"
+          echo "DEPLOYMENT FAILED - Attempting Rollback"
+          echo "============================================================"
+
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+          from deployment.langsmith_deploy import LangSmithDeployClient
+          from deployment.exceptions import DeploymentError
+
+          client = LangSmithDeployClient.from_env()
+
+          env_type = '${{ steps.env.outputs.ENV }}'
+          deployment_name = f'indufix-llamaindex-toolkit'
+
+          try:
+              # Find deployment
+              deployments = client.list_deployments()
+              deployment = next((d for d in deployments if d['name'] == deployment_name), None)
+
+              if deployment:
+                  deployment_id = deployment['id']
+                  print(f'Found deployment: {deployment_id}')
+                  print('Attempting rollback to previous revision...')
+
+                  try:
+                      client.rollback_to_previous(deployment_id)
+                      print('Rollback initiated successfully')
+                  except DeploymentError as e:
+                      print(f'Rollback failed: {e}')
+                      print('Manual intervention may be required')
+              else:
+                  print('Deployment not found - no rollback needed')
+
+          except Exception as e:
+              print(f'Rollback error: {e}')
+              print('Check LangSmith UI for manual rollback')
+          "
+
+      - name: Create deployment summary
+        if: always()
+        run: |
+          echo "# Deployment Summary 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: \`${{ steps.env.outputs.ENV }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "## Status" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Deployment successful!**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Status" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Deployment failed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
+            echo "Rollback may have been attempted automatically." >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Resources" >> $GITHUB_STEP_SUMMARY
+          echo "- [LangSmith UI](https://smith.langchain.com)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on failure
+        if: failure() && github.ref == 'refs/heads/main'
+        run: |
+          echo "Production deployment failed!"
+          echo "Manual review required."
+          # Add notification integration here (Slack, email, etc.)

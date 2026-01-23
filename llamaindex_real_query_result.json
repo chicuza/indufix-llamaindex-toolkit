@@ -1,0 +1,12 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{'messages': [{'content': 'What are the rules for determining product composition percentage?', 'additional_kwargs': {}, 'response_metadata': {}, 'type': 'human', 'name': None, 'id': '1aeab6b6-2504-4d31-96c7-e1ce99f0876f'}, {'content': 'Tools are available for use via MCP server', 'additional_kwargs': {}, 'response_metadata': {}, 'type': 'ai', 'name': None, 'id': 'c7ca5c03-5d62-4734-9a9c-ab47b3b81c5e', 'tool_calls': [], 'invalid_tool_calls': [], 'usage_metadata': None}]}"
+      }
+    ]
+  }
+}

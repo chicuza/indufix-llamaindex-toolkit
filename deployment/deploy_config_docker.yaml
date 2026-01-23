@@ -1,0 +1,37 @@
+# LangSmith Cloud Deployment Configuration - Docker Registry
+#
+# Use this template when deploying from Docker registry instead of GitHub
+#
+# Workflow:
+#   1. Build image: langgraph build -t your-image:tag
+#   2. Push to registry: docker push your-image:tag
+#   3. Deploy: python deploy_cli.py apply -f deploy_config_docker.yaml
+
+deployment:
+  # Deployment name
+  name: indufix-llamaindex-toolkit
+
+  # Source type for Docker registry
+  source: external_docker
+
+  # Docker image URI (REQUIRED for Docker deployments)
+  # Format: registry/repository:tag
+  # Examples:
+  #   - docker.io/username/image:latest
+  #   - ghcr.io/org/image:v1.0.0
+  #   - gcr.io/project/image:sha-abc123
+  image_uri: docker.io/chicuza/indufix-toolkit:latest
+
+  # Deployment type
+  type: dev
+
+# Secrets
+secrets:
+  LLAMA_CLOUD_API_KEY: ${LLAMA_CLOUD_API_KEY}
+
+# Resource allocation (optional)
+resource_spec:
+  min_scale: 1
+  max_scale: 3
+  cpu: 1
+  memory_mb: 1024

@@ -1,0 +1,52 @@
+# LangSmith Cloud Deployment Configuration - PRODUCTION
+#
+# Use this file with: python deploy_cli.py apply -f deploy_config_prod.yaml
+#
+# Environment variables can be referenced with ${VAR_NAME}
+
+deployment:
+  # Deployment name (must be unique in workspace)
+  name: indufix-llamaindex-toolkit
+
+  # Source type: "github" or "external_docker"
+  source: github
+
+  # GitHub repository URL (required if source=github)
+  repo_url: https://github.com/chicuza/indufix-llamaindex-toolkit
+
+  # Git branch to deploy (production uses main branch)
+  branch: main
+
+  # Path to langgraph.json in repository
+  config_path: langgraph.json
+
+  # Deployment type: "dev" or "prod"
+  type: prod
+
+  # Docker image URI (required if source=external_docker)
+  # image_uri: docker.io/chicuza/indufix-toolkit:v1.0.0
+
+# Secrets (sensitive environment variables)
+# Values can reference environment variables with ${VAR_NAME}
+secrets:
+  # LlamaCloud API Key (REQUIRED)
+  LLAMA_CLOUD_API_KEY: ${LLAMA_CLOUD_API_KEY}
+
+  # LLM Provider API Keys (REQUIRED - Choose one or both)
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+  OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+  # LangSmith Tracing & Observability (REQUIRED for production monitoring)
+  LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+  LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2}
+  LANGCHAIN_PROJECT: ${LANGCHAIN_PROJECT}
+  LANGCHAIN_ENDPOINT: ${LANGCHAIN_ENDPOINT}
+  LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
+
+# Resource allocation for production (higher resources than dev)
+# Uncomment and adjust as needed for production workloads
+# resource_spec:
+#   min_scale: 2      # Start with 2 instances for HA
+#   max_scale: 5      # Scale up to 5 instances under load
+#   cpu: 2            # More CPU for production
+#   memory_mb: 2048   # More memory for production
