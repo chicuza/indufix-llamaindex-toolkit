@@ -175,19 +175,56 @@ def create_or_update_deployment(
             logger.info("No existing deployment found, creating new one...")
 
             # Create new deployment
-            deployment = client.create_deployment(
-                name=name,
-                source=source,
-                repo_url=deployment_config.get('repo_url'),
-                branch=deployment_config.get('branch', 'main'),
-                config_path=deployment_config.get('config_path', 'langgraph.json'),
-                image_uri=deployment_config.get('image_uri'),
-                secrets=secrets,
-                deployment_type=deployment_config.get('type', 'dev')
-            )
+            try:
+                deployment = client.create_deployment(
+                    name=name,
+                    source=source,
+                    repo_url=deployment_config.get('repo_url'),
+                    branch=deployment_config.get('branch', 'main'),
+                    config_path=deployment_config.get('config_path', 'langgraph.json'),
+                    image_uri=deployment_config.get('image_uri'),
+                    secrets=secrets,
+                    deployment_type=deployment_config.get('type', 'dev')
+                )
 
-            logger.info("Deployment created successfully")
-            return deployment
+                logger.info("Deployment created successfully")
+                return deployment
+
+            except APIError as create_error:
+                # Handle 409 Conflict - deployment likely exists but wasn't listed
+                if create_error.status_code == 409:
+                    logger.warning("Got 409 Conflict - project/deployment may already exist")
+                    logger.info("Attempting to find and update existing deployment...")
+
+                    # Try to get all deployments with higher limit
+                    try:
+                        all_deployments = client.list_deployments(limit=1000)
+                        existing = next((d for d in all_deployments if d['name'] == name), None)
+
+                        if existing:
+                            deployment_id = existing['id']
+                            logger.info(f"Found deployment: {deployment_id}")
+                            logger.info("Updating deployment...")
+
+                            deployment = client.update_deployment(
+                                deployment_id=deployment_id,
+                                branch=deployment_config.get('branch'),
+                                image_uri=deployment_config.get('image_uri'),
+                                secrets=secrets
+                            )
+
+                            logger.info("Deployment updated successfully")
+                            return deployment
+                        else:
+                            logger.error(f"Could not find deployment '{name}' even with 409 conflict")
+                            logger.error("This may indicate a project exists but deployment was deleted")
+                            logger.error("Please delete the LangSmith project manually or use a different name")
+                            raise create_error
+                    except Exception as recovery_error:
+                        logger.error(f"Recovery attempt failed: {recovery_error}")
+                        raise create_error
+                else:
+                    raise create_error
 
     except APIError as e:
         logger.error(f"API error: {e}")
