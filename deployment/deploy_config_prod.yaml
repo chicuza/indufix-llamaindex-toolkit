@@ -6,7 +6,7 @@
 
 deployment:
   # Deployment name (must be unique in workspace)
-  name: indufix-llamaindex-toolkit
+  name: indufix-llamaindex-toolkit-prod
 
   # Source type: "github" or "external_docker"
   source: github
