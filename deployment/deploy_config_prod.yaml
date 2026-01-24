@@ -34,7 +34,7 @@ secrets:
 
   # LLM Provider API Keys (REQUIRED - Choose one or both)
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-  OPENAI_API_KEY: ${OPENAI_API_KEY}
+  # OPENAI_API_KEY: ${OPENAI_API_KEY}  # Optional - using Anthropic instead
 
   # LangSmith Tracing & Observability (REQUIRED for production monitoring)
   LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}

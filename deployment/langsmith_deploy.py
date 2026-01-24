@@ -24,12 +24,20 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from exceptions import (
-    DeploymentError,
-    DeploymentTimeoutError,
-    DeploymentNotFoundError,
-    APIError
-)
+try:
+    from .exceptions import (
+        DeploymentError,
+        DeploymentTimeoutError,
+        DeploymentNotFoundError,
+        APIError
+    )
+except ImportError:
+    from exceptions import (
+        DeploymentError,
+        DeploymentTimeoutError,
+        DeploymentNotFoundError,
+        APIError
+    )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
