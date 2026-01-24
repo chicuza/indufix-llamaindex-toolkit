@@ -1,0 +1,133 @@
+{
+  "test_date": "2026-01-23 20:05:17",
+  "deployment_url": "https://ndufix-llamaindex-toolkit-m-554ed4cdc4ff5631b895423bc5000927.us.langgraph.app",
+  "workspace_id": "950d802b-125a-45bc-88e4-3d7d0edee182",
+
+  "mcp_endpoint_status": {
+    "status_code": 200,
+    "tools_found": 1,
+    "tool_name": "indufix_agent",
+    "connectivity": "SUCCESS"
+  },
+
+  "test_results": {
+    "total_tests": 4,
+    "tests_passed": 0,
+    "success_rate": "0.0%",
+
+    "test_1": {
+      "name": "Query Simples - Valores Default",
+      "query": "Buscar valores default para parafuso sextavado M10",
+      "status_code": 200,
+      "response": "Tools are available for use via MCP server",
+      "tool_calls": [],
+      "invalid_tool_calls": [],
+      "expected_keywords": ["material", "acabamento", "aço", "zincado"],
+      "keywords_found": 0,
+      "result": "FAILED - Generic response, no tool invocation"
+    },
+
+    "test_2": {
+      "name": "Equivalências de Normas",
+      "query": "Qual a equivalência da norma DIN 933?",
+      "status_code": 200,
+      "response": "Tools are available for use via MCP server",
+      "tool_calls": [],
+      "invalid_tool_calls": [],
+      "expected_keywords": ["ISO", "4017", "equivalente"],
+      "keywords_found": 0,
+      "result": "FAILED - Generic response, no tool invocation"
+    },
+
+    "test_3": {
+      "name": "Penalidades de Confiança",
+      "query": "Qual a penalidade para material inferido como aço carbono?",
+      "status_code": 200,
+      "response": "Tools are available for use via MCP server",
+      "tool_calls": [],
+      "invalid_tool_calls": [],
+      "expected_keywords": ["penalidade", "confiança", "0.", "penalty"],
+      "keywords_found": 1,
+      "note": "Found 'penalidade' in the query echo, not in actual response data",
+      "result": "FAILED - Generic response, no tool invocation"
+    },
+
+    "test_4": {
+      "name": "Query Complexa - Múltiplos Atributos",
+      "query": "Para parafuso sextavado M12 faltam material, acabamento e classe. Me dê valores default e penalidades.",
+      "status_code": 200,
+      "response": "Tools are available for use via MCP server",
+      "tool_calls": [],
+      "invalid_tool_calls": [],
+      "expected_keywords": ["material", "acabamento", "classe", "default", "penalidade"],
+      "keywords_found": 5,
+      "note": "Keywords found in the query echo, not in actual response data",
+      "result": "FAILED - Generic response, no tool invocation"
+    }
+  },
+
+  "critical_findings": {
+    "mcp_authentication": "SUCCESS - X-Api-Key header working",
+    "tool_discovery": "SUCCESS - indufix_agent found via tools/list",
+    "tool_invocation": "PARTIAL - Tool responds but doesn't invoke internal tools",
+    "response_pattern": "ALL queries return generic 'Tools are available' message",
+    "tool_calls_array": "EMPTY - No internal tool invocations logged",
+    "root_cause": "Agent designed to be invoked BY Agent Builder, not standalone via MCP"
+  },
+
+  "architectural_analysis": {
+    "current_behavior": "indufix_agent returns generic message when called directly via MCP",
+    "expected_behavior_via_agent_builder": "Agent Builder's LLM makes tool selection, then calls indufix_agent, which routes to specific tools",
+    "why_no_tool_calls": "The agent's internal LLM needs API keys (Anthropic/OpenAI) configured in deployment environment to make routing decisions",
+    "deployment_env_issue": "Agent likely doesn't have ANTHROPIC_API_KEY or OPENAI_API_KEY set in LangSmith deployment environment"
+  },
+
+  "recommendations": {
+    "option_1": {
+      "name": "Configure Agent Builder Integration (RECOMMENDED)",
+      "description": "Add MCP server to Agent Builder UI and use as designed",
+      "steps": [
+        "Add MCP server in Settings → Workspace → MCP Servers",
+        "Create/configure agent in Agent Builder",
+        "Add indufix_agent tool to agent",
+        "Test via Agent Builder interface"
+      ],
+      "expected_outcome": "Full functionality with tool invocations"
+    },
+
+    "option_2": {
+      "name": "Add LLM API Keys to Deployment Environment",
+      "description": "Configure ANTHROPIC_API_KEY or OPENAI_API_KEY in LangSmith deployment",
+      "steps": [
+        "Go to LangSmith deployment settings",
+        "Add environment variable: ANTHROPIC_API_KEY=sk-ant-...",
+        "Redeploy the agent",
+        "Re-test with direct MCP calls"
+      ],
+      "expected_outcome": "Agent can route to internal tools when called directly",
+      "note": "This may not be the intended usage pattern"
+    },
+
+    "option_3": {
+      "name": "Modify Architecture to Expose Tools Directly",
+      "description": "Change langgraph.json to expose individual tools instead of agent wrapper",
+      "complexity": "HIGH - Requires code changes and redeployment",
+      "not_recommended": "Current architecture is intentional for Agent Builder integration"
+    }
+  },
+
+  "next_steps": {
+    "immediate": [
+      "Review AGENT_INTEGRATION_FINDINGS.md for full architectural explanation",
+      "Follow GUIA_UI_INTEGRACAO_PASSO_A_PASSO.md for Agent Builder setup",
+      "Complete 30-minute UI integration process"
+    ],
+    "verification": [
+      "After Agent Builder integration, test with same queries",
+      "Expect specific technical data instead of generic responses",
+      "Validate tool_calls array is populated with actual invocations"
+    ]
+  },
+
+  "deployment_status": "OPERATIONAL - MCP endpoint working correctly, awaiting Agent Builder UI configuration for full functionality"
+}

@@ -208,3 +208,17 @@ __marimo__/
 .env*
 *.env
 SECRETS_FOR_USER.txt
+
+# Additional Security Patterns for Indufix Toolkit
+# Ensure no sensitive deployment files are committed
+*_secrets.*
+*.key
+*.pem
+*.p12
+*.pfx
+.deployment_credentials
+deployment_credentials.json
+
+# But allow example files
+!.env.example
+!*_example.*
