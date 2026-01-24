@@ -196,9 +196,21 @@ def create_or_update_deployment(
                     logger.warning("Got 409 Conflict - project/deployment may already exist")
                     logger.info("Attempting to find and update existing deployment...")
 
-                    # Try to get all deployments with higher limit
+                    # Try to get all deployments using pagination (API max limit is 100)
                     try:
-                        all_deployments = client.list_deployments(limit=1000)
+                        all_deployments = []
+                        offset = 0
+                        limit = 100
+
+                        while True:
+                            batch = client.list_deployments(limit=limit, offset=offset)
+                            all_deployments.extend(batch)
+
+                            if len(batch) < limit:
+                                break  # No more deployments
+                            offset += limit
+
+                        logger.info(f"Found {len(all_deployments)} total deployment(s)")
                         existing = next((d for d in all_deployments if d['name'] == name), None)
 
                         if existing:
