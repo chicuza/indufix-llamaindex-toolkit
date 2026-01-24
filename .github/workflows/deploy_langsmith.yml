@@ -227,7 +227,7 @@ jobs:
           client = LangSmithDeployClient.from_env()
 
           env_type = '${{ steps.env.outputs.ENV }}'
-          deployment_name = f'indufix-llamaindex-toolkit'  # Match config
+          deployment_name = f'indufix-llamaindex-toolkit-prod'  # Match config
 
           # Get deployment
           deployments = client.list_deployments()
@@ -269,7 +269,7 @@ jobs:
           client = LangSmithDeployClient.from_env()
 
           env_type = '${{ steps.env.outputs.ENV }}'
-          deployment_name = f'indufix-llamaindex-toolkit'
+          deployment_name = f'indufix-llamaindex-toolkit-prod'
 
           try:
               # Find deployment
