@@ -36,12 +36,8 @@ secrets:
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
   # OPENAI_API_KEY: ${OPENAI_API_KEY}  # Optional - using Anthropic instead
 
-  # LangSmith Tracing & Observability (REQUIRED for production monitoring)
-  LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
-  LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2}
-  LANGCHAIN_PROJECT: ${LANGCHAIN_PROJECT}
-  LANGCHAIN_ENDPOINT: ${LANGCHAIN_ENDPOINT}
-  LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
+  # Note: LangSmith/LangChain environment variables are automatically provided by LangSmith Cloud
+  # and should NOT be specified here (they are reserved variable names)
 
 # Resource allocation for production (higher resources than dev)
 # Uncomment and adjust as needed for production workloads
